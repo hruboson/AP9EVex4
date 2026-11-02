@@ -1,0 +1,27 @@
+- PSO
+- pořád iterační algoritmus
+- inspirace od ptáků
+- jedinci mají tendenci se hýbat jako hejno
+- jedinec, které má best, tak ostatní se k němu snaží hýbat
+    - pokud někdo při pohybu k global_best najde lepší, tak se všichni začnou hýbat k němu
+- tendence jít k tomu nejlepšímu co populace našla, ale při pohybu k best zkouší i nové pozice
+    - omezení "uletění" vzdálenosti v jedné iteraci
+- jak vzniká vektor pohybu/"letu" jedince
+    - $$v(i+1) = w*v_j(i) + c_1 * r_1 (global\_best - x_j(i)) + c_2 * r_1 * (personal\_best - x_j(i))$$
+        - bez první části (před plus) bude vektor přímo do global_best (chceme ale aby prohledával i trochu okolo)
+    - jedinec směřuje "mezi" global_best a personal_best (úhel určuje random) + složka setrvačnosti
+    - neletí přímo na global_best ale má pozměněnou trajektorii (první část rovnice (před první plus) = setrvačnost)
+    - tohle je celá rovnice co potřebuju k jeho pohybu
+        - $$x_j(i+1) = x_j(i) + v_j(i+1)$$
+    - parametry c1 c2, určují jak je pro mě důležité global_best nebo víc personal_best
+        - často se nastavují stejně
+    - r_1 a r_2 jsou náhodně vygenerované čísla
+- opět řeším hranice - nechám je "vyletět" mimo hranice, ale neohodnocuju je (nezjišťuju global_best a personal_best mimo hranice)
+    - po čase se vrátí do prohledávaného prostoru kvůli tendenci vracet se k global_best a personal_best
+- abychom neměli globální atraktor, můžeme přidat topologii kruhu, kdy každý jedinec ví jen o bestu svých sousedů (počet sousedů dán N, např.: N = 2)
+    - vpodstatě vytvoření subpopulací
+    - udržuje diverzitu populace
+    - udržím i schopnost konvergovat dýl
+- můžu taky postupně v iteracích snižovat rychlost (setrvačnost) jedinců, abych na začátku prohledával hodně a na konci už jen okolo minima
+
+!!! Změna, teď musím nastavit max počet iterací (MAXFES) jako ukončovací podmínku
