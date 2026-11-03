@@ -154,8 +154,92 @@ def run_pso(objective, bounds: tuple[float, float], dimension: int, max_evals: i
 
     return best_so_far, history, swarm
 
+def run_experiment(objective, bounds, dimension: int, runs: int = RUNS_NO, **params):
+    max_evals = EVALS_PER_DIM * dimension
+    results, histories = [], []
+    for _ in range(runs):
+        best, history, _ = run_pso(objective, bounds, dimension, max_evals, **params)
+        # pad in case the run ended early (should not happen)
+        history += [history[-1]] * (max_evals - len(history))
+        results.append(best)
+        histories.append(history)
+    average_history = [statistics.mean(h[i] for h in histories) for i in range(max_evals)]
+    return results, average_history
+
+def plot_results(curves: dict, all_results: dict):
+    problems = list(curves)
+    n_rows, n_cols = len(problems), len(DIMENSIONS)
+    colors = ["tab:red", "tab:blue", "tab:green"]
+
+    # convergence graphs
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(7 * n_cols, 3.8 * n_rows), squeeze=False)
+    for row, name in enumerate(problems):
+        for col, dimension in enumerate(DIMENSIONS):
+            ax = axes[row][col]
+            for color, variant in zip(colors, VARIANTS):
+                curve = curves[name][dimension][variant]
+                ax.plot(range(1, len(curve) + 1), [max(v, 1e-12) for v in curve],
+                        color=color, label=variant)
+            ax.set_yscale("log")
+            ax.set_title(f"{name} - {dimension}D")
+            ax.set_xlabel("Evaluations")
+            ax.set_ylabel(f"Mean best fitness ({RUNS_NO} runs)")
+            ax.grid(True, alpha=0.3)
+            ax.legend(loc="upper right", fontsize=8)
+    fig.suptitle(f"PSO - population {POPULATION_SIZE}, vmax = {VMAX_RATIO} * range",
+                 fontsize=13, fontweight="bold")
+    fig.tight_layout()
+    fig.savefig("pso_convergence.png", dpi=150)
+
+    # statistics table
+    columns = ["Problem", "Dim", "Variant", "Best", "Worst", "Mean", "Median", "Std. dev."]
+    rows = []
+    for name in problems:
+        for dimension in DIMENSIONS:
+            for variant in VARIANTS:
+                r = all_results[name][dimension][variant]
+                rows.append([name, f"{dimension}D", variant,
+                             f"{min(r):.3g}", f"{max(r):.3g}",
+                             f"{statistics.mean(r):.3g}", f"{statistics.median(r):.3g}",
+                             f"{statistics.pstdev(r):.3g}"])
+    fig_t, ax_t = plt.subplots(figsize=(15, 0.3 * len(rows) + 1))
+    ax_t.axis("off")
+    table = ax_t.table(cellText=rows, colLabels=columns, loc="center", cellLoc="center")
+    table.auto_set_font_size(False)
+    table.set_fontsize(9)
+    table.auto_set_column_width(list(range(len(columns))))
+    group = len(VARIANTS) * len(DIMENSIONS)
+    for (row, col), cell in table.get_celld().items():
+        if row == 0: # header
+            cell.set_facecolor("#dbe5f1")
+            cell.set_text_props(fontweight="bold")
+        elif (row - 1) // group % 2 == 1: # shade every second problem
+            cell.set_facecolor("#f4f4f4")
+    fig_t.tight_layout()
+    fig_t.savefig("pso_statistics.png", dpi=150)
+
 def main():
-    pass
+    random.seed(SEED)
+    print(f"Population: {POPULATION_SIZE}, runs: {RUNS_NO}, MAXFES: {EVALS_PER_DIM} * D\n")
+
+    curves, all_results = {}, {}
+    for name, (objective, bounds) in OBJECTIVES.items():
+        print(f"=== {name} ===")
+        curves[name], all_results[name] = {}, {}
+        for dimension in DIMENSIONS:
+            curves[name][dimension], all_results[name][dimension] = {}, {}
+            print(f"-- {dimension}D ({EVALS_PER_DIM * dimension} evals)")
+            for variant, params in VARIANTS.items():
+                results, curve = run_experiment(objective, bounds, dimension, RUNS_NO, **params)
+                all_results[name][dimension][variant] = results
+                curves[name][dimension][variant] = curve
+                print_stats(results, variant)
+        print()
+
+    plot_results(curves, all_results)
+
+    if "agg" not in plt.get_backend().lower():
+        plt.show()
 
 if __name__ == "__main__":
     main()
