@@ -2,7 +2,7 @@
 
 Project for the Evolutionary Computation Techniques class. Assignment 4: Particle Swarm Optimization.
 
-Author: [Ondřej Hruboš](https://github.com/hruboson), [Github repository](https://github.com/hruboson/AP9EVexN)
+Author: [Ondřej Hruboš](https://github.com/hruboson), [Github repository](https://github.com/hruboson/AP9EVex4)
 
 This implementation uses a small object-oriented structure (`Particle` and `Swarm` classes) and a single `run_pso` function that runs one optimisation. The variants differ only in their parameters, so they all share the same code.
 
